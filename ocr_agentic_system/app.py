@@ -64,13 +64,16 @@ st.sidebar.header("⚙️ Configuration & Samples")
 sample_choice = st.sidebar.selectbox(
     "Select Preloaded Sample Scenario:",
     options=[
-        "Upload Custom Image...",
-        "📄 Paper Document (Archiving & Search)",
-        "📄 Skewed & Noisy Document",
-        "🚗 Clean License Plate (Smart Traffic)",
-        "🚗 Dark/Inverted License Plate",
-        "🧾 Clean Accounting Invoice",
-        "⚠️ Invoice with Math Error (Self-Healing Demo)"
+        "Upload Custom File (PDF, TXT, CSV, Image)...",
+        "📄 Paper Document (Archiving & Search) [.PNG]",
+        "📄 Skewed & Noisy Document [.PNG]",
+        "🚗 Clean License Plate (Smart Traffic) [.PNG]",
+        "🚗 Dark/Inverted License Plate [.PNG]",
+        "🧾 Clean Accounting Invoice [.PNG]",
+        "⚠️ Invoice with Math Error (Self-Healing Demo) [.PNG]",
+        "📑 Official Invoice Document [.PDF]",
+        "📝 Commercial Agreement [.TXT]",
+        "📊 Invoice Line Items Table [.CSV]"
     ],
     index=6  # Default to error self-healing demo
 )
@@ -88,29 +91,35 @@ task_mode = st.sidebar.selectbox(
 
 max_retries = st.sidebar.slider("Max Error Self-Correction Retries:", min_value=1, max_value=5, value=2)
 
-# Determine image path
-image_path = None
+# Determine file path
+file_path = None
 uploaded_file = None
 
-if sample_choice == "Upload Custom Image...":
-    uploaded_file = st.sidebar.file_uploader("Upload an image (PNG, JPG, TIFF)", type=["png", "jpg", "jpeg", "tiff"])
+if sample_choice == "Upload Custom File (PDF, TXT, CSV, Image)...":
+    uploaded_file = st.sidebar.file_uploader(
+        "Upload a File (.PDF, .TXT, .CSV, .PNG, .JPG)", 
+        type=["png", "jpg", "jpeg", "tiff", "pdf", "txt", "csv"]
+    )
     if uploaded_file is not None:
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(temp_dir, uploaded_file.name)
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        image_path = temp_path
+        file_path = temp_path
 else:
     sample_key_map = {
-        "📄 Paper Document (Archiving & Search)": "document_clean",
-        "📄 Skewed & Noisy Document": "document_noisy",
-        "🚗 Clean License Plate (Smart Traffic)": "license_plate_clean",
-        "🚗 Dark/Inverted License Plate": "license_plate_dark",
-        "🧾 Clean Accounting Invoice": "invoice_clean",
-        "⚠️ Invoice with Math Error (Self-Healing Demo)": "invoice_with_math_error"
+        "📄 Paper Document (Archiving & Search) [.PNG]": "document_clean",
+        "📄 Skewed & Noisy Document [.PNG]": "document_noisy",
+        "🚗 Clean License Plate (Smart Traffic) [.PNG]": "license_plate_clean",
+        "🚗 Dark/Inverted License Plate [.PNG]": "license_plate_dark",
+        "🧾 Clean Accounting Invoice [.PNG]": "invoice_clean",
+        "⚠️ Invoice with Math Error (Self-Healing Demo) [.PNG]": "invoice_with_math_error",
+        "📑 Official Invoice Document [.PDF]": "invoice_pdf",
+        "📝 Commercial Agreement [.TXT]": "text_document",
+        "📊 Invoice Line Items Table [.CSV]": "invoice_csv"
     }
     key = sample_key_map.get(sample_choice)
-    image_path = sample_paths.get(key)
+    file_path = sample_paths.get(key)
 
 # Execute Graph Button
 run_analysis = st.sidebar.button("🚀 Run Multi-Agent OCR Workflow", type="primary")
@@ -120,8 +129,9 @@ with st.expander("ℹ️ Multi-Agent Architecture & Error Resolution Workflow"):
     st.markdown("""
     ```mermaid
     flowchart LR
-        Input["Input Image"] --> Preprocessor["🛠️ Preprocessor Agent\n(Deskew, CLAHE, Denoise)"]
-        Preprocessor --> OCR["👁️ Unified OCR Engine\n(RapidOCR / Tesseract)"]
+        Input["Input File\n(PDF, TXT, CSV, Image)"] --> Loader["📥 Document Loader\n(Render / Direct Text)"]
+        Loader --> Preprocessor["🛠️ Preprocessor Agent\n(Deskew, CLAHE, Denoise)"]
+        Preprocessor --> OCR["👁️ Unified OCR Engine\n(RapidOCR / Direct Text)"]
         OCR --> Orchestrator["🧠 Orchestrator Agent\n(Domain Classification)"]
         
         Orchestrator -->|Document| DocAgent["📄 Document Digitizer\n(Layout, Search Index)"]
@@ -140,18 +150,44 @@ with st.expander("ℹ️ Multi-Agent Architecture & Error Resolution Workflow"):
     ```
     """)
 
-if image_path and os.path.exists(image_path):
+if file_path and os.path.exists(file_path):
+    ext = os.path.splitext(file_path)[1].lower()
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.subheader("🖼️ Input Image")
-        st.image(image_path, use_container_width=True)
+        st.subheader(f"📁 Source Input File ({ext.upper()})")
+        if ext in [".png", ".jpg", ".jpeg", ".tiff"]:
+            st.image(file_path, use_container_width=True)
+        elif ext == ".pdf":
+            st.info(f"📑 PDF File Loaded: `{os.path.basename(file_path)}`")
+            # Render page preview
+            try:
+                import pymupdf
+                doc = pymupdf.open(file_path)
+                page = doc[0]
+                pix = page.get_pixmap(dpi=150)
+                temp_pdf_prev = os.path.join(tempfile.gettempdir(), "pdf_preview.png")
+                pix.save(temp_pdf_prev)
+                st.image(temp_pdf_prev, caption="PDF Page 1 Preview", use_container_width=True)
+                doc.close()
+            except Exception as e:
+                st.write(f"PDF Preview not available: {e}")
+        elif ext == ".csv":
+            st.info(f"📊 Tabular CSV File: `{os.path.basename(file_path)}`")
+            import pandas as pd
+            df = pd.read_csv(file_path)
+            st.dataframe(df, use_container_width=True)
+        elif ext == ".txt":
+            st.info(f"📝 Text File: `{os.path.basename(file_path)}`")
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            st.text_area("File Content", content, height=260)
 
     if run_analysis or "last_result" in st.session_state:
         if run_analysis:
-            with st.spinner("Executing LangGraph Multi-Agent Workflow..."):
+            with st.spinner("Executing LangGraph Multi-Agent Workflow on loaded file..."):
                 graph = OCRMultiAgentGraph()
-                result = graph.run(image_path=image_path, task_type=task_mode, max_retries=max_retries)
+                result = graph.run(file_path=file_path, task_type=task_mode, max_retries=max_retries)
                 st.session_state["last_result"] = result
         
         result = st.session_state.get("last_result", {})
@@ -162,18 +198,19 @@ if image_path and os.path.exists(image_path):
             st.subheader("⚙️ Preprocessed & Enhanced View")
             prep_path = result.get("preprocessed_image_path")
             if prep_path and os.path.exists(prep_path):
-                st.image(prep_path, use_container_width=True)
+                st.image(prep_path, caption="Vision Engine Input", use_container_width=True)
             else:
-                st.info("Original image used directly.")
+                st.info("Direct digital stream ingested.")
             
             prep_steps = final_out.get("preprocessing_history", [])
-            st.write(f"**Applied CV Filters:** `{', '.join(prep_steps) if prep_steps else 'Standard pass'}`")
+            st.write(f"**Applied CV / Normalization:** `{', '.join(prep_steps) if prep_steps else 'Direct Ingestion'}`")
+            st.write(f"**Source Format:** `{final_out.get('file_type', 'image').upper()}`")
 
         # Status Summary Metrics
         st.markdown("---")
         mcol1, mcol2, mcol3, mcol4 = st.columns(4)
         mcol1.metric("Classified Domain", doc_type.upper(), f"Conf: {final_out.get('classification_confidence', 0):.2f}")
-        mcol2.metric("OCR Engine Confidence", f"{final_out.get('ocr_confidence_score', 0):.1%}")
+        mcol2.metric("Confidence Score", f"{final_out.get('ocr_confidence_score', 0):.1%}")
         
         has_errors_resolved = final_out.get("errors_resolved", False)
         status_label = "Self-Healed (Success)" if has_errors_resolved else "Clean Pass"

@@ -127,3 +127,38 @@ def test_end_to_end_license_plate(workflow_graph, test_datasets):
     final_out = result["final_output"]
     assert final_out["document_type"] == "license_plate"
     assert "plate_number" in final_out["extracted_data"]
+
+def test_end_to_end_pdf_invoice(workflow_graph, test_datasets):
+    pdf_file = test_datasets["invoice_pdf"]
+    result = workflow_graph.run(pdf_file)
+    
+    assert result["status"] == "completed"
+    final_out = result["final_output"]
+    assert final_out["file_type"] == "pdf"
+    assert final_out["document_type"] == "invoice"
+    assert final_out["workflow_status"] == "SUCCESS"
+    fin = final_out["extracted_data"]["financial_summary"]
+    assert fin["grand_total"] == 495.00
+
+def test_end_to_end_txt_document(workflow_graph, test_datasets):
+    txt_file = test_datasets["text_document"]
+    result = workflow_graph.run(txt_file)
+    
+    assert result["status"] == "completed"
+    final_out = result["final_output"]
+    assert final_out["file_type"] == "txt"
+    assert final_out["document_type"] == "document"
+    assert final_out["workflow_status"] == "SUCCESS"
+    assert final_out["extracted_data"]["total_word_count"] > 20
+
+def test_end_to_end_csv_invoice(workflow_graph, test_datasets):
+    csv_file = test_datasets["invoice_csv"]
+    result = workflow_graph.run(csv_file)
+    
+    assert result["status"] == "completed"
+    final_out = result["final_output"]
+    assert final_out["file_type"] == "csv"
+    assert final_out["document_type"] == "invoice"
+    assert final_out["workflow_status"] == "SUCCESS"
+    fin = final_out["extracted_data"]["financial_summary"]
+    assert fin["grand_total"] == 170.50

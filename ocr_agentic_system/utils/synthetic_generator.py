@@ -160,6 +160,82 @@ def create_synthetic_datasets(target_dir: str = "sample_data") -> Dict[str, str]
     inv_err_img.save(inv_err_path)
     generated_paths["invoice_with_math_error"] = os.path.abspath(inv_err_path)
 
+    # -------------------------------------------------------------
+    # 7. Sample Text Document (.txt)
+    # -------------------------------------------------------------
+    txt_path = os.path.join(target_dir, "contract_agreement.txt")
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(
+            "COMMERCIAL SERVICES AGREEMENT 2026\n"
+            "Section 1: Purpose and Scope\n"
+            "This document establishes the service-level agreement between Apex Dynamics and Client Corp.\n"
+            "The vendor agrees to maintain optical quality standards and automated data ingestion pipelines.\n"
+            "\n"
+            "Section 2: Performance Metrics and Archiving\n"
+            "All transactions will be logged in an immutable search index with 99.9% uptime.\n"
+            "Periodic audits will verify full-text indexing, token frequencies, and layout extraction accuracy.\n"
+            "\n"
+            "Section 3: Termination and Signatures\n"
+            "Either party may terminate this agreement with 30 days written notice.\n"
+            "Signed: Apex Dynamics Ltd, Date: 2026-09-15\n"
+        )
+    generated_paths["text_document"] = os.path.abspath(txt_path)
+
+    # -------------------------------------------------------------
+    # 8. Sample PDF Document (.pdf)
+    # -------------------------------------------------------------
+    pdf_path = os.path.join(target_dir, "invoice_official.pdf")
+    try:
+        import pymupdf
+        doc = pymupdf.open()
+        page = doc.new_page(width=595, height=842) # A4
+        # Draw header text
+        page.insert_text(pymupdf.Point(50, 60), "OFFICIAL INVOICE", fontsize=18, fontname="helv", color=(0.1, 0.2, 0.5))
+        page.insert_text(pymupdf.Point(50, 85), "Apex Vision Systems LLC | Invoice #: INV-2026-PDF-001", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(50, 105), "Date: 2026-09-20 | Bill To: Global Logistics Enterprise", fontsize=10, fontname="helv")
+        
+        # Table
+        page.draw_line(pymupdf.Point(50, 130), pymupdf.Point(545, 130), color=(0.7, 0.7, 0.7), width=1)
+        page.insert_text(pymupdf.Point(50, 145), "Description", fontsize=10, fontname="helv", color=(0.2, 0.2, 0.2))
+        page.insert_text(pymupdf.Point(280, 145), "Qty", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(360, 145), "Unit Price", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(460, 145), "Total", fontsize=10, fontname="helv")
+        page.draw_line(pymupdf.Point(50, 155), pymupdf.Point(545, 155), color=(0.7, 0.7, 0.7), width=1)
+
+        page.insert_text(pymupdf.Point(50, 180), "High-Speed ANPR Camera Sensor", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(280, 180), "2", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(360, 180), "$200.00", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(460, 180), "$400.00", fontsize=10, fontname="helv")
+
+        page.insert_text(pymupdf.Point(50, 205), "Optical Filter Lens Mount", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(280, 205), "1", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(360, 205), "$50.00", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(460, 205), "$50.00", fontsize=10, fontname="helv")
+
+        page.draw_line(pymupdf.Point(50, 230), pymupdf.Point(545, 230), color=(0.7, 0.7, 0.7), width=1)
+        page.insert_text(pymupdf.Point(360, 255), "Subtotal: $450.00", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(360, 275), "Tax (10%): $45.00", fontsize=10, fontname="helv")
+        page.insert_text(pymupdf.Point(360, 305), "Grand Total: $495.00", fontsize=12, fontname="helv", color=(0.1, 0.2, 0.5))
+
+        doc.save(pdf_path)
+        doc.close()
+        generated_paths["invoice_pdf"] = os.path.abspath(pdf_path)
+    except Exception as e:
+        pass
+
+    # -------------------------------------------------------------
+    # 9. Sample Tabular CSV (.csv)
+    # -------------------------------------------------------------
+    csv_path = os.path.join(target_dir, "invoice_line_items.csv")
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("InvoiceNo,Vendor,ItemDescription,Qty,UnitPrice,Total\n")
+        f.write("INV-2026-CSV1,Apex Technologies,Industrial GigE Cable,3,25.00,75.00\n")
+        f.write("INV-2026-CSV1,Apex Technologies,Camera Mount Kit,2,40.00,80.00\n")
+        f.write("INV-2026-CSV1,Apex Technologies,Subtotal: $155.00,,,\n")
+        f.write("INV-2026-CSV1,Apex Technologies,Tax: $15.50,,,\n")
+        f.write("INV-2026-CSV1,Apex Technologies,Grand Total: $170.50,,,\n")
+    generated_paths["invoice_csv"] = os.path.abspath(csv_path)
+
     return generated_paths
 
 if __name__ == "__main__":

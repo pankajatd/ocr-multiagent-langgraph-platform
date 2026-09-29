@@ -18,16 +18,17 @@ from .utils.synthetic_generator import create_synthetic_datasets
 
 console = Console()
 
-def run_single(image_path: str, task_type: str = "auto"):
-    if not os.path.exists(image_path):
-        console.print(f"[bold red]Error:[/bold red] File not found: {image_path}")
+def run_single(file_path: str, task_type: str = "auto"):
+    if not os.path.exists(file_path):
+        console.print(f"[bold red]Error:[/bold red] File not found: {file_path}")
         sys.exit(1)
 
-    console.print(Panel(f"[bold cyan]LangGraph Multi-Agent OCR Pipeline[/bold cyan]\nProcessing: [green]{image_path}[/green] | Mode: [yellow]{task_type}[/yellow]", expand=False))
+    ext = os.path.splitext(file_path)[1].lower()
+    console.print(Panel(f"[bold cyan]LangGraph Multi-Agent OCR Pipeline[/bold cyan]\nProcessing: [green]{file_path}[/green] ({ext.upper()}) | Mode: [yellow]{task_type}[/yellow]", expand=False))
     
     with console.status("[bold blue]Executing Multi-Agent Graph...[/bold blue]", spinner="dots"):
         graph = OCRMultiAgentGraph()
-        result = graph.run(image_path=image_path, task_type=task_type)
+        result = graph.run(file_path=file_path, task_type=task_type)
 
     final_out = result.get("final_output", {})
     doc_type = final_out.get("document_type", "unknown")
@@ -40,9 +41,10 @@ def run_single(image_path: str, task_type: str = "auto"):
     table.add_column("Property", style="dim", width=24)
     table.add_column("Value")
     
+    table.add_row("Input File Format", f"[bold cyan]{final_out.get('file_type', ext[1:]).upper()}[/bold cyan]")
     table.add_row("Classified Domain", f"[bold yellow]{doc_type.upper()}[/bold yellow] (Confidence: {cls_conf:.2f})")
     table.add_row("Orchestrator Reason", final_out.get("routing_reason", "N/A"))
-    table.add_row("OCR Engine Confidence", f"{ocr_conf:.2%}")
+    table.add_row("OCR / Text Confidence", f"{ocr_conf:.2%}")
     table.add_row("Workflow Status", f"[bold green]{status}[/bold green]" if status == "SUCCESS" else f"[bold yellow]{status}[/bold yellow]")
     table.add_row("Error Resolver Invoked", "[bold green]YES (Healed)[/bold green]" if final_out.get("errors_resolved") else "NO (Zero Errors)")
     table.add_row("Preprocessing Steps", ", ".join(final_out.get("preprocessing_history", [])))
@@ -108,15 +110,15 @@ def run_demo():
 
 def main():
     parser = argparse.ArgumentParser(description="LangGraph Multi-Agent OCR System")
-    parser.add_argument("--image", type=str, help="Path to input image")
+    parser.add_argument("--file", "--image", dest="file", type=str, help="Path to input file (PDF, TXT, CSV, PNG, JPG, TIFF)")
     parser.add_argument("--type", type=str, default="auto", choices=["auto", "document", "license_plate", "invoice"], help="Target task type")
-    parser.add_argument("--demo", action="store_true", help="Generate synthetic test datasets and run end-to-end demo")
+    parser.add_argument("--demo", action="store_true", help="Generate synthetic test datasets and run end-to-end demo across all formats")
     
     args = parser.parse_args()
     if args.demo:
         run_demo()
-    elif args.image:
-        run_single(args.image, args.type)
+    elif args.file:
+        run_single(args.file, args.type)
     else:
         parser.print_help()
 

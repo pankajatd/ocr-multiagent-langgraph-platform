@@ -23,6 +23,10 @@ class ErrorRecord(TypedDict):
 class OCRWorkflowState(TypedDict, total=False):
     # Input
     image_path: str
+    original_file_path: str
+    file_type: str  # 'image', 'pdf', 'txt', 'csv'
+    direct_text: str  # embedded digital text from PDF/TXT/CSV
+    file_metadata: Dict[str, Any]
     task_type: TaskType  # user override or 'auto'
     
     # Preprocessing

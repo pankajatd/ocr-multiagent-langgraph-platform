@@ -15,6 +15,7 @@ from langgraph.graph import StateGraph, END
 
 from ..core.state import OCRWorkflowState, ErrorRecord
 from ..engine.ocr_engine import get_ocr_engine
+from ..engine.document_loader import DocumentLoader
 from ..agents.preprocessor_agent import PreprocessorAgent
 from ..agents.orchestrator_agent import OrchestratorAgent
 from ..agents.document_digitizer_agent import DocumentDigitizerAgent
@@ -30,7 +31,8 @@ class OCRMultiAgentGraph:
         self.output_dir = output_dir or os.path.join(os.getcwd(), "ocr_output")
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # Initialize component agents
+        # Initialize component agents and loaders
+        self.doc_loader = DocumentLoader(cache_dir=os.path.join(self.output_dir, "loaded_media"))
         self.preprocessor = PreprocessorAgent(output_dir=os.path.join(self.output_dir, "preprocessed"))
         self.orchestrator = OrchestratorAgent()
         self.doc_agent = DocumentDigitizerAgent()
@@ -66,9 +68,16 @@ class OCRMultiAgentGraph:
         }
 
     def _ocr_node(self, state: OCRWorkflowState) -> Dict[str, Any]:
-        """Runs the unified OCR engine on the preprocessed image."""
+        """Runs the unified OCR engine on the preprocessed image and merges direct text."""
         img_to_read = state.get("preprocessed_image_path") or state.get("image_path")
         boxes, full_text, avg_conf = self.ocr_engine.extract_text_and_boxes(img_to_read)
+
+        direct_text = state.get("direct_text", "")
+        # If direct text is embedded (digital PDF, TXT, or CSV) and richer, merge it
+        if direct_text and len(direct_text.strip()) > len(full_text.strip()):
+            full_text = direct_text
+            if avg_conf < 0.8:
+                avg_conf = 0.99  # Digital text has near-perfect confidence
 
         return {
             "ocr_raw_boxes": boxes,
@@ -170,6 +179,9 @@ class OCRMultiAgentGraph:
     def _postprocessor_node(self, state: OCRWorkflowState) -> Dict[str, Any]:
         """Compiles final output artifact, formats result, and marks completion."""
         final_payload = {
+            "file_type": state.get("file_type", "image"),
+            "original_file_path": state.get("original_file_path", state.get("image_path")),
+            "file_metadata": state.get("file_metadata", {}),
             "document_type": state.get("classified_type"),
             "classification_confidence": state.get("classification_confidence"),
             "routing_reason": state.get("routing_reason"),
@@ -284,12 +296,18 @@ class OCRMultiAgentGraph:
 
         return builder.compile()
 
-    def run(self, image_path: str, task_type: str = "auto", max_retries: int = 2) -> Dict[str, Any]:
+    def run(self, file_path: str, task_type: str = "auto", max_retries: int = 2, page_number: int = 0) -> Dict[str, Any]:
         """
-        Executes the LangGraph Multi-Agent pipeline on an image.
+        Executes the LangGraph Multi-Agent pipeline on an Image, PDF, TXT, or CSV file.
         """
+        loaded = self.doc_loader.load_file(file_path, page_number=page_number)
+
         initial_state: OCRWorkflowState = {
-            "image_path": os.path.abspath(image_path),
+            "image_path": loaded["rendered_image_path"],
+            "original_file_path": loaded["file_path"],
+            "file_type": loaded["file_type"],
+            "direct_text": loaded["direct_text"],
+            "file_metadata": loaded["metadata"],
             "task_type": task_type,
             "retry_count": 0,
             "max_retries": max_retries,
