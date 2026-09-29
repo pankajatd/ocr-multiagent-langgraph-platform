@@ -1,0 +1,21 @@
+# Virtual Environment
+venv_ocr/
+.venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing & Temp
+.pytest_cache/
+tests_tmp/
+ocr_output/
+*.log
+
+# OS Specific
+.DS_Store
+Thumbs.db
