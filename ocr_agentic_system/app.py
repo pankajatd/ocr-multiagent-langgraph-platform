@@ -60,45 +60,23 @@ st.markdown('<div class="sub-header">Self-Correcting Multi-Agent System for Docu
 sample_paths = create_synthetic_datasets(os.path.join(os.getcwd(), "sample_data"))
 
 # Sidebar Controls
-st.sidebar.header("⚙️ Configuration & Samples")
-sample_choice = st.sidebar.selectbox(
-    "Select Preloaded Sample Scenario:",
-    options=[
-        "Upload Custom File (PDF, TXT, CSV, Image)...",
-        "📄 Paper Document (Archiving & Search) [.PNG]",
-        "📄 Skewed & Noisy Document [.PNG]",
-        "🚗 Clean License Plate (Smart Traffic) [.PNG]",
-        "🚗 Dark/Inverted License Plate [.PNG]",
-        "🧾 Clean Accounting Invoice [.PNG]",
-        "⚠️ Invoice with Math Error (Self-Healing Demo) [.PNG]",
-        "📑 Official Invoice Document [.PDF]",
-        "📝 Commercial Agreement [.TXT]",
-        "📊 Invoice Line Items Table [.CSV]"
-    ],
-    index=6  # Default to error self-healing demo
-)
+st.sidebar.header("⚙️ Configuration & Input")
 
-task_mode = st.sidebar.selectbox(
-    "Target Domain / Specialist:",
-    options=["auto", "document", "license_plate", "invoice"],
-    format_func=lambda x: {
-        "auto": "🤖 Auto-Detect (Orchestrator)",
-        "document": "📄 Paper Document Digitizer",
-        "license_plate": "🚗 License Plate Recognition (ANPR)",
-        "invoice": "🧾 Invoice & Receipt Scanner"
-    }[x]
+input_mode = st.sidebar.radio(
+    "Choose Input Source:",
+    options=["📂 Upload Your Own File", "📋 Use Preloaded Sample Scenario"],
+    index=0
 )
-
-max_retries = st.sidebar.slider("Max Error Self-Correction Retries:", min_value=1, max_value=5, value=2)
 
 # Determine file path
 file_path = None
 uploaded_file = None
 
-if sample_choice == "Upload Custom File (PDF, TXT, CSV, Image)...":
+if input_mode == "📂 Upload Your Own File":
     uploaded_file = st.sidebar.file_uploader(
-        "Upload a File (.PDF, .TXT, .CSV, .PNG, .JPG)", 
-        type=["png", "jpg", "jpeg", "tiff", "pdf", "txt", "csv"]
+        "Upload a File (.PDF, .TXT, .CSV, .PNG, .JPG):", 
+        type=["pdf", "txt", "csv", "png", "jpg", "jpeg", "tiff"],
+        help="Upload any PDF invoice/document, TXT transcript, CSV table, or Image file."
     )
     if uploaded_file is not None:
         temp_dir = tempfile.gettempdir()
@@ -106,7 +84,26 @@ if sample_choice == "Upload Custom File (PDF, TXT, CSV, Image)...":
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         file_path = temp_path
+        st.sidebar.success(f"Loaded: `{uploaded_file.name}`")
+    else:
+        st.sidebar.info("👆 Please drag and drop or browse a PDF, TXT, CSV, or Image above.")
+
 else:
+    sample_choice = st.sidebar.selectbox(
+        "Select Preloaded Scenario:",
+        options=[
+            "⚠️ Invoice with Math Error (Self-Healing Demo) [.PNG]",
+            "📑 Official Invoice Document [.PDF]",
+            "📝 Commercial Agreement [.TXT]",
+            "📊 Invoice Line Items Table [.CSV]",
+            "📄 Paper Document (Archiving & Search) [.PNG]",
+            "📄 Skewed & Noisy Document [.PNG]",
+            "🚗 Clean License Plate (Smart Traffic) [.PNG]",
+            "🚗 Dark/Inverted License Plate [.PNG]",
+            "🧾 Clean Accounting Invoice [.PNG]"
+        ],
+        index=0  # Default to self-healing demo
+    )
     sample_key_map = {
         "📄 Paper Document (Archiving & Search) [.PNG]": "document_clean",
         "📄 Skewed & Noisy Document [.PNG]": "document_noisy",
@@ -120,6 +117,19 @@ else:
     }
     key = sample_key_map.get(sample_choice)
     file_path = sample_paths.get(key)
+
+task_mode = st.sidebar.selectbox(
+    "Target Domain / Specialist:",
+    options=["auto", "document", "license_plate", "invoice"],
+    format_func=lambda x: {
+        "auto": "🤖 Auto-Detect (Orchestrator)",
+        "document": "📄 Paper Document Digitizer",
+        "license_plate": "🚗 License Plate Recognition (ANPR)",
+        "invoice": "🧾 Invoice & Receipt Scanner"
+    }[x]
+)
+
+max_retries = st.sidebar.slider("Max Error Self-Correction Retries:", min_value=1, max_value=5, value=2)
 
 # Execute Graph Button
 run_analysis = st.sidebar.button("🚀 Run Multi-Agent OCR Workflow", type="primary")
