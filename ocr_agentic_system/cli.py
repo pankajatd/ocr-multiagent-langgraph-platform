@@ -85,9 +85,9 @@ def run_single(file_path: str, task_type: str = "auto"):
         inv_tbl.add_row("Invoice Date", ext.get("invoice_date", ""))
         fin = ext.get("financial_summary", {})
         curr = ext.get("currency", "$")
-        inv_tbl.add_row("Subtotal", f"{curr}{fin.get('subtotal', 0.0):.2f}")
-        inv_tbl.add_row("Tax", f"{curr}{fin.get('tax', 0.0):.2f}")
-        inv_tbl.add_row("Grand Total", f"[bold underline]{curr}{fin.get('grand_total', 0.0):.2f}[/bold underline]")
+        inv_tbl.add_row("Subtotal", f"{curr}{(fin.get('subtotal') or 0.0):.2f}")
+        inv_tbl.add_row("Tax", f"{curr}{(fin.get('tax') or 0.0):.2f}")
+        inv_tbl.add_row("Grand Total", f"[bold underline]{curr}{(fin.get('grand_total') or 0.0):.2f}[/bold underline]")
         console.print(inv_tbl)
 
     else: # document

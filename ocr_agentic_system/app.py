@@ -265,9 +265,9 @@ if file_path and os.path.exists(file_path):
                 with icol2:
                     fin = ext.get("financial_summary", {})
                     curr = ext.get("currency", "$")
-                    st.markdown(f"**Subtotal:** {curr}{fin.get('subtotal', 0.0):.2f}")
-                    st.markdown(f"**Tax / VAT:** {curr}{fin.get('tax', 0.0):.2f}")
-                    st.markdown(f"### Grand Total: {curr}{fin.get('grand_total', 0.0):.2f}")
+                    st.markdown(f"**Subtotal:** {curr}{(fin.get('subtotal') or 0.0):.2f}")
+                    st.markdown(f"**Tax / VAT:** {curr}{(fin.get('tax') or 0.0):.2f}")
+                    st.markdown(f"### Grand Total: {curr}{(fin.get('grand_total') or 0.0):.2f}")
 
                 st.markdown("#### Parsed Line Items:")
                 line_items = ext.get("line_items", [])
