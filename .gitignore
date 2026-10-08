@@ -19,3 +19,6 @@ ocr_output/
 # OS Specific
 .DS_Store
 Thumbs.db
+*.pptx
+~$*.pptx
+*.html

@@ -57,14 +57,15 @@ st.markdown('<div class="main-header">🔍 LangGraph Multi-Agent OCR Platform</d
 st.markdown('<div class="sub-header">Self-Correcting Multi-Agent System for Document Archiving, Smart Traffic ANPR, and Invoice Extraction</div>', unsafe_allow_html=True)
 
 # Generate or load synthetic samples
-sample_paths = create_synthetic_datasets(os.path.join(os.getcwd(), "sample_data"))
+sample_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sample_data")
+sample_paths = create_synthetic_datasets(sample_dir)
 
 # Sidebar Controls
 st.sidebar.header("⚙️ Configuration & Input")
 
 input_mode = st.sidebar.radio(
     "Choose Input Source:",
-    options=["📂 Upload Your Own File", "📋 Use Preloaded Sample Scenario"],
+    options=["📋 Use Preloaded Sample Scenario", "📂 Upload Your Own File"],
     index=0
 )
 
